@@ -1,0 +1,9 @@
+config:
+  line-length: false          # длинные строки допустимы
+  no-inline-html: false       # разрешаем HTML (<br/> в диаграммах Mermaid)
+  no-emphasis-as-heading: false  # жирные подписи «Сценарий N» в критериях приёмки
+  no-duplicate-heading:
+    siblings_only: true
+ignores:
+  - "**/node_modules/**"
+  - ".github/**"              # шаблон PR начинается с «##», это нормально
