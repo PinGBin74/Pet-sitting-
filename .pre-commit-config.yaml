@@ -1,0 +1,22 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace          # убирает пробелы в конце строк
+        exclude: \.md$
+      - id: end-of-file-fixer            # добавляет перевод строки в конце файла
+      - id: check-merge-conflict         # ловит незакрытые маркеры конфликта
+      - id: detect-private-key           # ловит приватные ключи
+      - id: check-yaml                   # проверяет синтаксис YAML
+      - id: check-added-large-files      # блокирует файлы больше 500 КБ
+        args: ['--maxkb=500']
+      - id: mixed-line-ending            # приводит окончания строк к одному виду
+        args: ['--fix=lf']
+
+  # Тот же линтер и та же версия, что в конвейере (markdownlint-cli2-action@v16).
+  # Конфиг .markdownlint-cli2.yaml подхватывается автоматически.
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.13.0
+    hooks:
+      - id: markdownlint-cli2
+        args: ['--fix']
