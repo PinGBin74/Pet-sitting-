@@ -1,0 +1,27 @@
+%% C4, уровень 1 — контекст. Соглашение об оформлении — docs/architecture/README.md
+flowchart TB
+    owner["Владелец питомца<br/><i>человек</i><br/>Ищет хоста, бронирует передержку,<br/>смотрит отчёты, оставляет отзыв"]
+    host["Хост<br/><i>человек</i><br/>Ведёт профиль, принимает или отклоняет<br/>запросы, отправляет фотоотчёты"]
+    moderator["Модератор<br/><i>человек</i><br/>Проверяет заявки хостов"]
+
+    subgraph boundary["Передержка рядом"]
+        system["Передержка рядом<br/><i>программная система</i><br/>Профили хостов, проверка, брони,<br/>фотоотчёты и отзывы"]
+    end
+
+    mail["Почтовый сервер<br/><i>внешняя система</i><br/>Доставка оповещений о бронях и проверке<br/>(пока — запись в журнал)"]
+    ci["Конвейер GitHub Actions<br/><i>внешняя система</i><br/>Проверяет изменения, собирает образ"]
+    probe["Внешняя проверка работоспособности<br/><i>внешняя система</i><br/>Опрашивает /health"]
+
+    owner -->|"ищет хостов, бронирует,<br/>смотрит отчёты<br/>HTTPS"| system
+    host -->|"ведёт профиль, решает по запросам,<br/>загружает фото<br/>HTTPS"| system
+    moderator -->|"одобряет и отклоняет хостов<br/>HTTPS"| system
+    system -->|"отправляет оповещения<br/>SMTP"| mail
+    ci -->|"собирает и разворачивает<br/>образ контейнера"| system
+    probe -->|"опрашивает<br/>HTTP GET /health"| system
+
+    classDef actor fill:#E8EEF7,stroke:#4A7DB5,color:#16202E
+    classDef sys fill:#FBF0EC,stroke:#E2603A,color:#16202E
+    classDef ext fill:#F1F3F6,stroke:#5B6472,color:#16202E
+    class owner,host,moderator actor
+    class system sys
+    class mail,ci,probe ext

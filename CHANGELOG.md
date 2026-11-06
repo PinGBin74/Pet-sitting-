@@ -2,9 +2,15 @@
 
 Формат: [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/).
 
-## [Не выпущено]
+- `docs/requirements.md`: требования к качеству `NFR-01`, `NFR-02`, `NFR-05`, `NFR-06`
+- `docs/domain/event-storming.md`: ограниченные контексты, связи, предложение о структуре кода — гипотезы до сессии
+- `docs/domain/context-map.mmd`, `docs/domain/aggregates.md` — черновик карты контекстов и агрегатов
+- `docs/adr/0001`, `0003`, `0004`, `0006` и указатель `docs/adr/README.md`; форма `docs/templates/adr.md`
+- `docs/architecture/overview.md` — обзор, таблица тактик, защищённость по STRIDE
+- `docs/architecture/c4/context.mmd`, `docs/architecture/c4/container.mmd`, `docs/architecture/README.md`
+- `docs/api/resources.md` — ресурсы и операции REST с кодами ответов и ролями
 
-### Добавлено
+## Добавлено
 
 - Репозиторий проекта с защищённой основной веткой
 - Базовый конвейер проверок документации (`.github/workflows/ci.yml`)

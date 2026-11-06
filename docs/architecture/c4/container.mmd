@@ -1,0 +1,42 @@
+%% C4, уровень 2 — контейнеры. Соглашение об оформлении — docs/architecture/README.md
+flowchart TB
+    owner["Владелец питомца<br/><i>человек</i>"]
+    host["Хост<br/><i>человек</i>"]
+    moderator["Модератор<br/><i>человек</i>"]
+
+    subgraph boundary["Передержка рядом"]
+        web["Браузерное приложение<br/><i>контейнер: JavaScript, Vue 3.5, Vite 6</i><br/>Поиск, брони, кабинет хоста, очередь модерации"]
+        api["Сервис API<br/><i>контейнер: Python 3.13, FastAPI</i><br/>Модули: Бронирование, Хосты,<br/>Передержка, Участники"]
+        db[("База данных<br/><i>контейнер: PostgreSQL 17</i><br/>Пользователи, питомцы, хосты, брони,<br/>отчёты, отзывы, метаданные фото")]
+        photos[("Хранилище фото<br/><i>контейнер: именованный том, файловая система</i><br/>Файлы фото профилей и отчётов")]
+        cache[("Кеш<br/><i>контейнер: Valkey 8</i><br/>Счётчики ограничения частоты")]
+        broker[("Брокер сообщений<br/><i>контейнер: RabbitMQ 4</i><br/>События о бронях и проверке хостов")]
+        worker["Обработчик событий<br/><i>контейнер: Python 3.13, тот же код, что api</i><br/>Оповещения, истечение запросов брони"]
+    end
+
+    mail["Почтовый сервер<br/><i>внешняя система</i>"]
+    ci["Конвейер GitHub Actions<br/><i>внешняя система</i>"]
+    probe["Внешняя проверка работоспособности<br/><i>внешняя система</i>"]
+
+    owner -->|"HTTPS"| web
+    host -->|"HTTPS"| web
+    moderator -->|"HTTPS"| web
+    web -->|"вызывает<br/>JSON поверх HTTPS"| api
+    api -->|"читает и пишет данные<br/>SQL поверх TCP"| db
+    api -->|"пишет и читает файлы фото<br/>файловая система"| photos
+    api -->|"считает запросы<br/>протокол Redis"| cache
+    api -->|"публикует BookingRequested, BookingConfirmed,<br/>BookingDeclined, BookingCancelled,<br/>HostApproved, HostRejected<br/>AMQP"| broker
+    broker -->|"доставляет BookingRequested, BookingConfirmed,<br/>BookingDeclined, BookingCancelled,<br/>HostApproved, HostRejected<br/>AMQP"| worker
+    worker -->|"находит истёкшие запросы брони<br/>SQL поверх TCP"| db
+    worker -->|"отправляет письма<br/>SMTP"| mail
+    ci -->|"собирает и разворачивает<br/>образ контейнера"| api
+    probe -->|"опрашивает<br/>HTTP GET /health"| api
+
+    classDef actor fill:#E8EEF7,stroke:#4A7DB5,color:#16202E
+    classDef sys fill:#FBF0EC,stroke:#E2603A,color:#16202E
+    classDef store fill:#ECF6F4,stroke:#3E9E8F,color:#16202E
+    classDef ext fill:#F1F3F6,stroke:#5B6472,color:#16202E
+    class owner,host,moderator actor
+    class web,api,worker sys
+    class db,photos,cache,broker store
+    class mail,ci,probe ext
