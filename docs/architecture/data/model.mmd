@@ -1,0 +1,67 @@
+erDiagram
+    USERS {
+        uuid id PK "Идентификатор"
+        text email UK "Электронная почта (логин)"
+        text display_name "Имя пользователя"
+        text role "Роль (visitor / admin)"
+        timestamptz created_at "Дата создания"
+    }
+
+    PETS {
+        uuid id PK "Идентификатор"
+        uuid owner_id FK "Ссылка на владельца"
+        text species "Вид (cat / dog)"
+        text breed "Порода"
+        float weight "Вес (кг)"
+        date vaccination_date "Дата последней прививки"
+        text notes "Особенности"
+        timestamptz created_at "Дата создания"
+    }
+
+    HOSTS {
+        uuid id PK "Идентификатор"
+        uuid user_id FK "Ссылка на пользователя"
+        text district "Район"
+        int price_per_night "Цена за сутки (руб.)"
+        int capacity "Вместимость (питомцев)"
+        text status "Статус (pending / approved / rejected)"
+        text rejection_reason "Причина отказа"
+        timestamptz created_at "Дата создания"
+    }
+
+    BOOKINGS {
+        uuid id PK "Идентификатор"
+        uuid host_id FK "Ссылка на хоста"
+        uuid owner_id FK "Ссылка на владельца"
+        uuid pet_id FK "Ссылка на питомца"
+        timestamptz starts_at "Дата заезда"
+        timestamptz ends_at "Дата выезда"
+        text status "Статус (requested / confirmed / declined / cancelled / expired)"
+        jsonb pet_snapshot "Снимок карточки питомца"
+        text cancel_reason "Причина отмены"
+        uuid cancelled_by FK "Кто отменил"
+        timestamptz created_at "Дата создания"
+    }
+
+    REPORTS {
+        uuid id PK "Идентификатор"
+        uuid booking_id FK "Ссылка на бронь"
+        text text_content "Текст отчёта"
+        timestamptz created_at "Дата создания"
+    }
+
+    REVIEWS {
+        uuid id PK "Идентификатор"
+        uuid booking_id FK "Ссылка на бронь"
+        int rating "Оценка (1-5)"
+        text content "Текст отзыва"
+        timestamptz created_at "Дата создания"
+    }
+
+    USERS ||--o{ PETS : "владеет"
+    USERS ||--o| HOSTS : "является"
+    USERS ||--o{ BOOKINGS : "создаёт как владелец"
+    HOSTS ||--o{ BOOKINGS : "принимает"
+    PETS ||--o{ BOOKINGS : "участвует"
+    BOOKINGS ||--o{ REPORTS : "имеет"
+    BOOKINGS ||--o| REVIEWS : "имеет"
