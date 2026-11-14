@@ -19,8 +19,46 @@
 
 ## Как запустить
 
-> На текущем этапе кода нет — проект находится в стадии проектирования.
-> Раздел заполняется в модуле 03.
+### Что нужно установить
+
+- [Git](https://git-scm.com/)
+- [uv](https://docs.astral.sh/uv/) — менеджер Python и зависимостей; нужную версию Python (3.13) он ставит сам по файлу `.python-version`
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) с Compose; на Windows — с механизмом WSL 2
+
+Проверка: `uv --version` и `docker run --rm hello-world` выполняются без ошибок.
+
+> **Windows:** держите репозиторий внутри WSL (`~/projects/...`), а не в `/mnt/c/...` — иначе сборка и тесты идут в разы медленнее.
+
+### Полностью в контейнерах — одной командой
+
+```bash
+docker compose up -d --build
+curl http://localhost:8080/health          # {"status":"ok"}
+```
+
+Остановить: `docker compose down`. Данные базы хранятся в томе и переживают перезапуск.
+
+### Локально, для разработки
+
+```bash
+uv sync                      # поставить Python и зависимости ровно по uv.lock
+cp .env.example .env         # создать локальную конфигурацию
+docker compose up -d db      # поднять только базу данных
+uv run python -m booking     # запустить сервис
+```
+
+Сервис — на `http://localhost:8080`, описание API — на `http://localhost:8080/docs`.
+
+### Тесты и проверки
+
+```bash
+uv run pytest --cov=src/booking --cov-report=term-missing   # тесты с покрытием
+uv run ruff format --check .                                # форматирование
+uv run ruff check .                                         # линтер
+uv run mypy src/                                            # типы
+```
+
+Те же проверки выполняет конвейер на каждый запрос на слияние, порог покрытия — 70 %.
 
 ## Как внести изменение
 
@@ -35,7 +73,7 @@
 
 ## Настройка окружения разработчика
 
-Нужны Git и Python (для локальных хуков).
+Нужны Git и uv (см. «Как запустить»).
 
 ```bash
 git clone <адрес репозитория>

@@ -27,3 +27,11 @@ obj/
 # Логи и временные файлы
 *.log
 tmp/
+
+# Python: окружение и кеши инструментов (с ЛР 3А)
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
