@@ -20,3 +20,11 @@ repos:
     hooks:
       - id: markdownlint-cli2
         args: ['--fix']
+
+  # Та же версия ruff, что зафиксирована в uv.lock: хук и конвейер форматируют одинаково.
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.5
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format

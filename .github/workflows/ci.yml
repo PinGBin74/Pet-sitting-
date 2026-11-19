@@ -73,3 +73,112 @@ jobs:
         uses: DavidAnson/markdownlint-cli2-action@v16
         with:
           globs: '**/*.md'
+
+  backend:
+    name: Backend checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install Python and dependencies
+        run: uv sync --frozen
+
+      - name: Format check
+        run: uv run ruff format --check .
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Type check
+        run: uv run mypy src/
+
+      - name: Tests
+        run: uv run pytest --cov=src/booking --cov-report=term-missing --cov-fail-under=70
+
+  image:
+    name: Docker image builds
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t petsitting:ci .
+
+      - name: No development tools in the image
+        run: |
+          if docker run --rm petsitting:ci python -c "import pytest" 2>/dev/null; then
+            echo "::error::В образ попали инструменты разработки (pytest)"
+            exit 1
+          fi
+
+      - name: Container answers /health
+        run: |
+          docker run -d --name probe \
+            -e DATABASE_URL=postgresql://b:b@localhost:5432/b \
+            -p 8080:8080 petsitting:ci
+          for i in $(seq 1 20); do
+            curl -fsS http://localhost:8080/health && break || sleep 1
+          done
+          curl -fsS http://localhost:8080/health
+          docker rm -f probe
+
+  decisions:
+    name: Decision records are complete
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Required sections present
+        run: |
+          set -euo pipefail
+          failed=0
+          for file in docs/adr/[0-9]*.md; do
+            for section in "## Контекст" "## Движущие факторы" \
+                           "## Рассмотренные варианты" "## Решение" "## Последствия"; do
+              grep -q "^$section" "$file" || { echo "$file: нет раздела «$section»"; failed=1; }
+            done
+            grep -q "Что пересмотрит решение" "$file" \
+              || { echo "$file: нет условия пересмотра"; failed=1; }
+            grep -q "^- \*\*Статус\*\*" "$file" \
+              || { echo "$file: нет статуса"; failed=1; }
+          done
+          exit $failed
+
+      - name: Every record is listed in the index
+        run: |
+          set -euo pipefail
+          failed=0
+          for file in docs/adr/[0-9]*.md; do
+            grep -q "$(basename "$file")" docs/adr/README.md \
+              || { echo "$(basename "$file") отсутствует в указателе"; failed=1; }
+          done
+          exit $failed
+
+  diagrams:
+    name: Diagrams render
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Render every diagram
+        run: |
+          set -euo pipefail
+          shopt -s globstar nullglob
+          # Ubuntu 24.04 запрещает браузеру песочницу без прав администратора — отключаем её явно
+          echo '{"args":["--no-sandbox"]}' > /tmp/puppeteer.json
+          failed=0
+          for file in docs/**/*.mmd; do
+            echo "== $file"
+            npx --yes @mermaid-js/mermaid-cli@11.4.0 -p /tmp/puppeteer.json \
+              -i "$file" -o "/tmp/$(basename "$file").svg" \
+              || { echo "НЕ ОТРИСОВЫВАЕТСЯ: $file"; failed=1; }
+          done
+          exit $failed
