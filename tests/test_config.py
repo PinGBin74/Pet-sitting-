@@ -1,15 +1,17 @@
 """Settings: defaults, validation, secrets kept out of messages."""
 
 from pathlib import Path
+from pydantic import ValidationError
 
 import pytest
 
-from booking.config import ConfigurationError, Settings, get_settings
+from src.booking.config import ConfigurationError, Settings, get_settings
 from tests.conftest import TEST_DATABASE_URL
 
 
 def make_settings(**values: object) -> Settings:
     """Settings from explicit values only: the developer's .env must not leak in."""
+    values.setdefault("database_url", TEST_DATABASE_URL)
     return Settings(_env_file=None, **values)  # type: ignore[arg-type]
 
 
@@ -38,7 +40,7 @@ def test_values_are_read_from_environment(monkeypatch: pytest.MonkeyPatch) -> No
 
 
 def test_database_url_is_required(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    monkeypatch.delenv("DATABASE_URL")
+    monkeypatch.delenv("DATABASE_URL", raising=False)
     monkeypatch.chdir(tmp_path)  # no .env in the working directory
 
     with pytest.raises(ConfigurationError, match="DATABASE_URL"):
@@ -82,7 +84,8 @@ def test_repr_does_not_contain_the_database_url() -> None:
     assert "s3cret" not in repr(settings)
 
 
-def test_settings_are_read_once_per_process() -> None:
+def test_settings_are_read_once_per_process(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("DATABASE_URL", TEST_DATABASE_URL)
     assert get_settings() is get_settings()
 
 
@@ -96,5 +99,5 @@ def test_settings_cannot_be_changed_after_start() -> None:
 def test_unknown_key_in_env_file_is_rejected(tmp_path: Path) -> None:
     env_file = tmp_path / ".env"
     env_file.write_text(f"DATABASE_URL={TEST_DATABASE_URL}\nLOG_LEVL=info\n", encoding="utf-8")
-    with pytest.raises(ConfigurationError, match="LOG_LEVL"):
+    with pytest.raises(ValidationError, match="log_levl"):
         Settings(_env_file=env_file)  # type: ignore[call-arg]

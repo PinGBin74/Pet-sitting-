@@ -14,6 +14,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     configure_logging(settings.log_level)
 
     app = FastAPI(title="Pet-sitting API", version=settings.app_version)
+    app.dependency_overrides[get_settings] = lambda: settings
     app.add_middleware(RequestIdMiddleware)
     app.include_router(system.router)
 
