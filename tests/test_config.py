@@ -91,3 +91,10 @@ def test_settings_cannot_be_changed_after_start() -> None:
 
     with pytest.raises(ValueError, match="frozen"):
         settings.port = 1
+
+
+def test_unknown_key_in_env_file_is_rejected(tmp_path: Path) -> None:
+    env_file = tmp_path / ".env"
+    env_file.write_text(f"DATABASE_URL={TEST_DATABASE_URL}\nLOG_LEVL=info\n", encoding="utf-8")
+    with pytest.raises(ConfigurationError, match="LOG_LEVL"):
+        Settings(_env_file=env_file)  # type: ignore[call-arg]

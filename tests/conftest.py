@@ -1,28 +1,35 @@
 """Shared fixtures: a valid environment and a clean logging setup for every test."""
 
-import logging
 from collections.abc import Iterator
+from pathlib import Path
 
 import pytest
+from fastapi.testclient import TestClient
 
-from booking.config import get_settings
+from src.booking.app import create_app
+from src.booking.config import Settings
 
 TEST_DATABASE_URL = "postgresql://test:test@localhost:5432/test"
 
 
-@pytest.fixture(autouse=True)
-def _environment(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
-    """DATABASE_URL is required; settings are cached per process, so reset them."""
-    monkeypatch.setenv("DATABASE_URL", TEST_DATABASE_URL)
-    get_settings.cache_clear()
-    yield
-    get_settings.cache_clear()
+@pytest.fixture
+def settings() -> Settings:
+    return Settings(
+        environment="test",
+        log_level="warning",
+        app_version="0.0.0-test",
+        database_url=TEST_DATABASE_URL,  # type: ignore[arg-type]
+    )
+
+
+@pytest.fixture
+def client(settings: Settings) -> Iterator[TestClient]:
+    with TestClient(create_app(settings=settings)) as test_client:
+        yield test_client
 
 
 @pytest.fixture(autouse=True)
-def _detach_log_handlers() -> Iterator[None]:
-    """configure_logging() binds a handler to the current stdout; pytest closes it."""
-    yield
-    root = logging.getLogger()
-    for handler in [h for h in root.handlers if getattr(h, "_booking_json_handler", False)]:
-        root.removeHandler(handler)
+def _clean_environment(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    for name in Settings.model_fields:
+        monkeypatch.delenv(name.upper(), raising=False)
+    monkeypatch.chdir(tmp_path)

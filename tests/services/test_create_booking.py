@@ -1,10 +1,11 @@
 """Scenario "create booking": acceptance criteria of FR-05.
 
-The doubles below are local to this module and minimal. Shared doubles
-(stubs and spies in tests/doubles.py) can replace them later.
+Doubles are shared: tests/doubles.py (stubs for clock, storage, directories;
+spy for the notifier). This module only assembles the world and checks the
+scenario.
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from decimal import Decimal
 from uuid import UUID, uuid4
@@ -25,70 +26,20 @@ from booking.domain.booking import (
     Species,
     StayPeriod,
 )
-from booking.ports import BookableHost
-from booking.services import CreateBooking, CreateBookingCommand
+from src.booking.ports import BookableHost
+from src.booking.services import CreateBooking, CreateBookingCommand
+from tests.doubles import (
+    InMemoryBookings,
+    InMemoryHosts,
+    InMemoryPets,
+    SpyNotifier,
+    StubClock,
+)
 
 pytestmark = pytest.mark.asyncio
 
 NOW = datetime(2026, 11, 1, 9, 0, tzinfo=UTC)
 TODAY = NOW.date()
-
-
-@dataclass
-class FixedClock:
-    def now(self) -> datetime:
-        return NOW
-
-    def today(self) -> date:
-        return TODAY
-
-
-@dataclass
-class Bookings:
-    stored: list[Booking] = field(default_factory=list)
-
-    async def add(self, booking: Booking) -> None:
-        self.stored.append(booking)
-
-    async def get(self, booking_id: UUID) -> Booking | None:
-        return next((b for b in self.stored if b.id == booking_id), None)
-
-    async def confirmed_periods(self, host_id: UUID, overlapping: StayPeriod) -> list[StayPeriod]:
-        return [
-            b.period
-            for b in self.stored
-            if b.host_id == host_id
-            and b.status_at(NOW) is BookingStatus.CONFIRMED
-            and b.period.overlaps(overlapping)
-        ]
-
-
-@dataclass
-class Hosts:
-    verified: dict[UUID, BookableHost] = field(default_factory=dict)
-
-    async def find_verified(self, host_id: UUID) -> BookableHost | None:
-        return self.verified.get(host_id)
-
-
-@dataclass
-class Pets:
-    cards: dict[tuple[UUID, UUID], PetSnapshot] = field(default_factory=dict)
-
-    async def has_any(self, owner_id: UUID) -> bool:
-        return any(owner == owner_id for owner, _ in self.cards)
-
-    async def snapshot(self, owner_id: UUID, pet_id: UUID) -> PetSnapshot | None:
-        return self.cards.get((owner_id, pet_id))
-
-
-@dataclass
-class SpyNotifier:
-    requested: list[BookingRequested] = field(default_factory=list)
-
-    async def booking_requested(self, event: BookingRequested) -> None:
-        self.requested.append(event)
-
 
 OWNER_ID, OTHER_OWNER_ID, HOST_ID = uuid4(), uuid4(), uuid4()
 PET = PetSnapshot(
@@ -103,21 +54,21 @@ PET = PetSnapshot(
 
 @dataclass
 class World:
-    bookings: Bookings
-    hosts: Hosts
-    pets: Pets
+    bookings: InMemoryBookings
+    hosts: InMemoryHosts
+    pets: InMemoryPets
     notifier: SpyNotifier
     create: CreateBooking
 
 
 @pytest.fixture
 def world() -> World:
-    bookings = Bookings()
-    hosts = Hosts({HOST_ID: BookableHost(host_id=HOST_ID, capacity=1)})
-    pets = Pets({(OWNER_ID, PET.pet_id): PET})
+    bookings = InMemoryBookings(now=NOW)
+    hosts = InMemoryHosts({HOST_ID: BookableHost(host_id=HOST_ID, capacity=1)})
+    pets = InMemoryPets({(OWNER_ID, PET.pet_id): PET})
     notifier = SpyNotifier()
     create = CreateBooking(
-        bookings=bookings, hosts=hosts, pets=pets, notifier=notifier, clock=FixedClock()
+        bookings=bookings, hosts=hosts, pets=pets, notifier=notifier, clock=StubClock(NOW)
     )
     return World(bookings, hosts, pets, notifier, create)
 

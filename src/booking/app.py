@@ -1,19 +1,11 @@
 """Application factory."""
 
-from typing import Literal
-
 from fastapi import FastAPI
-from pydantic import BaseModel
 
+from booking.api import system
 from booking.api.middleware import RequestIdMiddleware
 from booking.config import Settings, get_settings
 from booking.logging import configure_logging
-
-
-class HealthResponse(BaseModel):
-    """Liveness answer. Deliberately free of external dependencies."""
-
-    status: Literal["ok"] = "ok"
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -23,10 +15,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app = FastAPI(title="Pet-sitting API", version=settings.app_version)
     app.add_middleware(RequestIdMiddleware)
-
-    @app.get("/health", response_model=HealthResponse, summary="Liveness probe")
-    async def health() -> HealthResponse:
-        """Report that the process is alive; touches no external system."""
-        return HealthResponse()
+    app.include_router(system.router)
 
     return app
