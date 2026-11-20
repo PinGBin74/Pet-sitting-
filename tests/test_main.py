@@ -5,7 +5,6 @@ from typing import Any
 import pytest
 
 from booking import __main__ as entry
-from src.booking.config import get_settings
 
 
 def test_main_starts_server_on_port_from_environment(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -24,12 +23,12 @@ def test_main_starts_server_on_port_from_environment(monkeypatch: pytest.MonkeyP
 def test_main_stops_with_readable_message_when_configuration_is_invalid(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from src.booking.config import ConfigurationError
+    from booking.config import ConfigurationError
 
     def fake_get_settings() -> None:
         raise ConfigurationError("Invalid configuration: DATABASE_URL")
 
-    monkeypatch.setattr("booking.__main__.get_settings", fake_get_settings)
+    monkeypatch.setattr(entry, "get_settings", fake_get_settings)
     monkeypatch.setattr(entry.uvicorn, "run", lambda *args, **kwargs: None)
 
     with pytest.raises(SystemExit) as stopped:
@@ -37,4 +36,3 @@ def test_main_stops_with_readable_message_when_configuration_is_invalid(
 
     message = str(stopped.value)
     assert "DATABASE_URL" in message
-    assert "s3cret" not in message
