@@ -24,10 +24,13 @@ def test_main_starts_server_on_port_from_environment(monkeypatch: pytest.MonkeyP
 def test_main_stops_with_readable_message_when_configuration_is_invalid(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("DATABASE_URL", "mysql://user:s3cret@db/app")
-    monkeypatch.setattr(entry.uvicorn, "run", lambda *args, **kwargs: None)
+    from src.booking.config import ConfigurationError
 
-    get_settings.cache_clear()
+    def fake_get_settings() -> None:
+        raise ConfigurationError("Invalid configuration: DATABASE_URL")
+
+    monkeypatch.setattr("booking.__main__.get_settings", fake_get_settings)
+    monkeypatch.setattr(entry.uvicorn, "run", lambda *args, **kwargs: None)
 
     with pytest.raises(SystemExit) as stopped:
         entry.main()
