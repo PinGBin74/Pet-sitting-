@@ -17,3 +17,17 @@ def test_main_starts_server_on_port_from_environment(monkeypatch: pytest.MonkeyP
     assert calls == [
         {"factory": True, "host": "0.0.0.0", "port": 9090, "log_config": None},
     ]
+
+
+def test_main_stops_with_readable_message_when_configuration_is_invalid(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("DATABASE_URL", "mysql://user:s3cret@db/app")
+    monkeypatch.setattr(entry.uvicorn, "run", lambda *args, **kwargs: None)
+
+    with pytest.raises(SystemExit) as stopped:
+        entry.main()
+
+    message = str(stopped.value)
+    assert "DATABASE_URL" in message
+    assert "s3cret" not in message
