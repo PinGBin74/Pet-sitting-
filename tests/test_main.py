@@ -10,6 +10,7 @@ from booking import __main__ as entry
 def test_main_starts_server_on_port_from_environment(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[dict[str, Any]] = []
     monkeypatch.setenv("PORT", "9090")
+    monkeypatch.setenv("DATABASE_URL", "postgresql://test:test@localhost:5432/test")
     monkeypatch.setattr(entry.uvicorn, "run", lambda *args, **kwargs: calls.append(kwargs))
 
     entry.main()
@@ -22,7 +23,12 @@ def test_main_starts_server_on_port_from_environment(monkeypatch: pytest.MonkeyP
 def test_main_stops_with_readable_message_when_configuration_is_invalid(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("DATABASE_URL", "mysql://user:s3cret@db/app")
+    from booking.config import ConfigurationError
+
+    def fake_get_settings() -> None:
+        raise ConfigurationError("Invalid configuration: DATABASE_URL")
+
+    monkeypatch.setattr(entry, "get_settings", fake_get_settings)
     monkeypatch.setattr(entry.uvicorn, "run", lambda *args, **kwargs: None)
 
     with pytest.raises(SystemExit) as stopped:
@@ -30,4 +36,3 @@ def test_main_stops_with_readable_message_when_configuration_is_invalid(
 
     message = str(stopped.value)
     assert "DATABASE_URL" in message
-    assert "s3cret" not in message

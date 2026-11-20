@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
-        extra="ignore",
+        extra="forbid",
         frozen=True,
     )
 
@@ -32,7 +32,6 @@ class Settings(BaseSettings):
     log_level: LogLevel = "info"
     environment: Environment = "development"
     app_version: str = Field(default="0.0.0-dev", min_length=1)
-    # Required, no default. Excluded from repr: the URL contains the password.
     database_url: PostgresDsn = Field(repr=False)
 
     @field_validator("log_level", "environment", mode="before")
