@@ -1,9 +1,9 @@
 """Settings: defaults, validation, secrets kept out of messages."""
 
 from pathlib import Path
-from pydantic import ValidationError
 
 import pytest
+from pydantic import ValidationError
 
 from src.booking.config import ConfigurationError, Settings, get_settings
 from tests.conftest import TEST_DATABASE_URL
