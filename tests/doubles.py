@@ -30,7 +30,7 @@ class StubClock:
 
 @dataclass
 class InMemoryBookings:
-    """записи о бронировании"""
+    """записи o бронировании"""
 
     stored: list[Booking] = field(default_factory=list)
     now: datetime | None = None

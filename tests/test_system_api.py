@@ -1,6 +1,7 @@
 """System endpoints."""
 
 from fastapi.testclient import TestClient
+
 from src.booking.api.middleware import REQUEST_ID_HEADER
 
 
