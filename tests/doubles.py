@@ -41,9 +41,7 @@ class InMemoryBookings:
     async def get(self, booking_id: UUID) -> Booking | None:
         return next((b for b in self.stored if b.id == booking_id), None)
 
-    async def confirmed_periods(
-        self, host_id: UUID, overlapping: StayPeriod
-    ) -> list[StayPeriod]:
+    async def confirmed_periods(self, host_id: UUID, overlapping: StayPeriod) -> list[StayPeriod]:
         moment = self.now or datetime.now()
         return [
             b.period
