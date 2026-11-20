@@ -1,19 +1,24 @@
 """Entry point: python -m booking."""
 
-import os
-
 import uvicorn
+
+from booking.config import ConfigurationError, get_settings
+from booking.logging import configure_logging
 
 
 def main() -> None:
-    # Temporary: replaced by get_settings() once config.py exists (lab 3A, step 3).
-    port = int(os.environ.get("PORT", "8080"))
+    try:
+        settings = get_settings()
+    except ConfigurationError as error:
+        raise SystemExit(str(error)) from None
+    # Before uvicorn starts: its own startup lines must already be JSON (NFR-03).
+    configure_logging(settings.log_level)
     uvicorn.run(
         "booking.app:create_app",
         factory=True,
         host="0.0.0.0",  # inside a container the server must accept any address
-        port=port,
-        log_config=None,  # logging will be configured by structlog; no second setup
+        port=settings.port,
+        log_config=None,  # logging is configured above; uvicorn must not add its own
     )
 
 

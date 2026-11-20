@@ -4,6 +4,16 @@
 
 ## [Не выпущено]
 
+### Добавлено (ЛР 3)
+
+- `src/booking/config.py`: настройки из переменных окружения с проверкой при запуске; неверное значение останавливает сервис с именем переменной, без её значения
+- `src/booking/logging.py`: журнал JSON по `NFR-03` — в каждой записи `timestamp`, `level`, `event`, `request_id`, включая записи uvicorn; пароли, маркеры, почта и телефоны скрываются
+- `src/booking/api/middleware.py`: идентификатор запроса `X-Request-ID` — во всех записях обращения и в ответе, в том числе при ошибке 500
+- `src/booking/domain/booking/`: агрегат `Booking`, значения `StayPeriod` и `PetSnapshot`, инварианты И-1–И-4, истечение запроса через 48 часов, правило вместимости, события и ошибки
+- `src/booking/ports/`: порты `BookingRepository`, `HostDirectory`, `PetCatalog`, `Clock`, `Notifier`
+- `src/booking/services/create_booking.py`: сценарий «создать бронь» по критериям `AC-05.1`–`AC-05.4`, `AC-05.6`
+- `docs/architecture/patterns.md`: три шаблона — хранилище, фабричный метод, стратегия
+
 ### Добавлено (модуль 07)
 
 - Каркас сервиса на Python 3.13 + FastAPI по `ADR-0002`: `pyproject.toml`, `uv.lock`, `.python-version`, `src/booking/`, заглушка `GET /health`, точка входа `python -m booking`
